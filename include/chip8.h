@@ -45,5 +45,6 @@ void SE(int8_t, int8_t);
 void SNE(int8_t, int8_t);
 void CALL(int16_t);
 void RET();
+void bSE(int8_t Vx, int8_t kk);
 
 #endif

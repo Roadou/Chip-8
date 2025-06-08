@@ -31,6 +31,7 @@ void loop() {
         
         switch(opcode & 0xF000) {
             case 0x0000:
+            {
                 switch(opcode & 0x00FF) {
                     case 0x00E0: // 00E0: CLS
                         CLS();
@@ -40,18 +41,32 @@ void loop() {
                         break;
                 }
                 break;
+            }
             case 0x1000: // 0x1nnn: JP
-                {
-                    uint16_t addr = opcode & 0x0FFF;
-                    JP(addr);
-                    break;
-                }
+            {
+                JP(opcode & 0x0FFF);
+                break;
+            }
             case 0x2000: // 0x2nnn: CALL
-                {
-                    uint16_t addr = opcode & 0x0FFF;
-                    CALL(addr);
-                    break;
-                }
+            {
+                CALL(opcode & 0x0FFF);
+                break;
+            }
+            case 0x3000:
+            {
+                bSE((opcode >> 8) & 0x0F, opcode & 0xFF00);
+                break;
+            }
+            case 0x4000:
+            {
+                bSNE((opcode >> 8) & 0x0F, opcode & 0xFF00);
+                break;
+            }
+            case 0x5000:
+            {
+                SE((opcode >> 8) & 0x0F00, (opcode >> 4) & 0x00F0);
+            }
+
 
         }
     }

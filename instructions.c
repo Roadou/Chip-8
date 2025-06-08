@@ -1,4 +1,7 @@
 #include "include/chip8.h"
+#include <stdint.h>
+
+//  0nnn - SYS addr -  Unimplemented, useless.
 
 /*
 00EE - RET
@@ -14,6 +17,15 @@ void RET()
 }
 
 /*
+00E0 - CLS
+Clear the display.
+*/
+void CLS()
+{
+    memset(p_cpu->display, 0, sizeof(p_cpu->display));
+}
+
+/*
 1nnn - JP addr
 Jump to location nnn.
 
@@ -25,34 +37,91 @@ void JP(int16_t addr)
 }
 
 /*
-00E0 - CLS
-Clear the display.
+2nnn - CALL addr
+Call subroutine at nnn.
+
+The interpreter increments the stack pointer, 
+then puts the current PC on the top of the stack. 
+The PC is then set to nnn.
 */
-void CLS()
+void CALL(int16_t addr)
 {
-    memset(p_cpu->display, 0, sizeof(p_cpu->display));
+    p_cpu->pc++;
 }
 
+/*
+3xkk - SE Vx, byte
+Skip next instruction if Vx = kk.
 
-void SE(int8_t Vx, int8_t Vy) {
-    if(p_cpu->r[Vx] == p_cpu->r[Vy]) p_cpu->pc += 2;
-}
-
-void SNE(int8_t Vx, int8_t Vy) {
-    if(p_cpu->r[Vx] != p_cpu->r[Vy]) p_cpu->pc += 2;
-}
-
+The interpreter compares register Vx to kk, and if they are equal, 
+increments the program counter by 2.
+*/
 void bSE(int8_t Vx, int8_t kk)
 {
     if(p_cpu->r[Vx] == kk) p_cpu->pc += 2;
 }
 
+/*
+4xkk - SNE Vx, byte
+Skip next instruction if Vx != kk.
+
+The interpreter compares register Vx to kk, and if they are not equal, 
+increments the program counter by 2.
+*/
 void bSNE(int8_t Vx, int8_t kk)
 {
     if(p_cpu->r[Vx] != kk) p_cpu->pc += 2;
 }
 
-void CALL(int16_t addr)
+/*
+5xy0 - SE Vx, Vy
+Skip next instruction if Vx = Vy.
+
+The interpreter compares register Vx to register Vy, and if they are equal, 
+increments the program counter by 2.
+*/
+void SE(int8_t Vx, int8_t Vy) {
+    if(p_cpu->r[Vx] == p_cpu->r[Vy]) p_cpu->pc += 2;
+}
+
+/*
+6xkk - LD Vx, byte
+Set Vx = kk.
+
+The interpreter puts the value kk into register Vx.
+*/
+void bLD(int8_t Vx, int8_t kk)
 {
-    p_cpu->pc++;
+    p_cpu->r[Vx] = kk;
+}
+
+/*
+7xkk - ADD Vx, byte
+Set Vx = Vx + kk.
+
+Adds the value kk to the value of register Vx, then stores the result in Vx. 
+*/
+void bADD(int8_t Vx, int8_t kk)
+{
+    p_cpu->r[Vx] = p_cpu->r[Vx] + kk;
+}
+
+/*
+8xy0 - LD Vx, Vy
+Set Vx = Vy.
+
+Stores the value of register Vy in register Vx.
+*/
+void OR(int8_t Vx, int8_t Vy) 
+{
+    p_cpu->r[Vx] = p_cpu->r[Vx] | p_cpu->r[Vy];
+}
+
+void AND(int8_t Vx, int8_t Vy)
+{
+    p_cpu->r[Vx] = p_cpu->r[Vx] & p_cpu->r[Vy];
+}
+
+void SNE(int8_t Vx, int8_t Vy) {
+    if(p_cpu->r[Vx] != p_cpu->r[Vy]) p_cpu->pc += 2;
 }

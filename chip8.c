@@ -1,5 +1,4 @@
 #include "include/chip8.h"
- 
 
 cpu* p_cpu;
 
@@ -54,18 +53,63 @@ void loop() {
             }
             case 0x3000:
             {
-                bSE((opcode >> 8) & 0x0F, opcode & 0xFF00);
+                bSE((opcode >> 8) & 0x0F, opcode & 0x00FF);
                 break;
             }
             case 0x4000:
             {
-                bSNE((opcode >> 8) & 0x0F, opcode & 0xFF00);
+                bSNE((opcode >> 8) & 0x0F, opcode & 0x00FF);
                 break;
             }
             case 0x5000:
             {
-                SE((opcode >> 8) & 0x0F00, (opcode >> 4) & 0x00F0);
+                SE((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                break;
             }
+            case 0x6000:
+            {
+                bLD((opcode >> 8) & 0x000F, opcode & 0x00FF);
+                break;
+            }
+            case 0x7000:
+            {
+                bADD((opcode >> 8) & 0x000F, opcode & 0x00FF);
+                break;
+            }
+            case 0x8000:
+            {
+                switch(opcode & 0xF00F)
+                {
+                    case 0x8001:
+                    {
+                        OR((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        break;
+                    }
+                    case 0x8002:
+                    {
+                        AND((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        break;
+                    }
+                    case 0x8003:
+                    {
+                        XOR((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        break;
+                    }
+                    case 0x8004:
+                    {
+                        ADD((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        break;
+                    }
+                    case 0x8005:
+                    {
+                        SUB((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        break;
+                    }
+
+                }
+                break;
+            }
+
 
 
         }

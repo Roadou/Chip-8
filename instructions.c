@@ -58,7 +58,7 @@ Skip next instruction if Vx = kk.
 The interpreter compares register Vx to kk, and if they are equal, 
 increments the program counter by 2.
 */
-void bSE(int8_t Vx, int8_t kk)
+void bSE(uint8_t Vx, int8_t kk)
 {
     if(p_cpu->r[Vx] == kk) p_cpu->pc += 2;
 }
@@ -70,7 +70,7 @@ Skip next instruction if Vx != kk.
 The interpreter compares register Vx to kk, and if they are not equal, 
 increments the program counter by 2.
 */
-void bSNE(int8_t Vx, int8_t kk)
+void bSNE(uint8_t Vx, int8_t kk)
 {
     if(p_cpu->r[Vx] != kk) p_cpu->pc += 2;
 }
@@ -82,7 +82,7 @@ Skip next instruction if Vx = Vy.
 The interpreter compares register Vx to register Vy, and if they are equal, 
 increments the program counter by 2.
 */
-void SE(int8_t Vx, int8_t Vy) {
+void SE(uint8_t Vx, uint8_t Vy) {
     if(p_cpu->r[Vx] == p_cpu->r[Vy]) p_cpu->pc += 2;
 }
 
@@ -92,7 +92,7 @@ Set Vx = kk.
 
 The interpreter puts the value kk into register Vx.
 */
-void bLD(int8_t Vx, int8_t kk)
+void bLD(uint8_t Vx, int8_t kk)
 {
     p_cpu->r[Vx] = kk;
 }
@@ -103,7 +103,7 @@ Set Vx = Vx + kk.
 
 Adds the value kk to the value of register Vx, then stores the result in Vx. 
 */
-void bADD(int8_t Vx, int8_t kk)
+void bADD(uint8_t Vx, int8_t kk)
 {
     p_cpu->r[Vx] = p_cpu->r[Vx] + kk;
 }
@@ -114,7 +114,7 @@ Set Vx = Vx OR Vy.
 
 Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx. A bitwise OR compares the corrseponding bits from two values, and if either bit is 1, then the same bit in the result is also 1. Otherwise, it is 0.
 */
-void OR(int8_t Vx, int8_t Vy) 
+void OR(uint8_t Vx, uint8_t Vy) 
 {
     p_cpu->r[Vx] = p_cpu->r[Vx] | p_cpu->r[Vy];
 }
@@ -126,7 +126,7 @@ Set Vx = Vx AND Vy.
 
 Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx. A bitwise AND compares the corrseponding bits from two values, and if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
 */
-void AND(int8_t Vx, int8_t Vy)
+void AND(uint8_t Vx, uint8_t Vy)
 {
     p_cpu->r[Vx] = p_cpu->r[Vx] & p_cpu->r[Vy];
 }
@@ -138,7 +138,7 @@ Set Vx = Vx XOR Vy.
 Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx. An exclusive OR compares the corrseponding bits from two values, and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0. 
 */
 
-void XOR(int8_t Vx, int8_t Vy)
+void XOR(uint8_t Vx, uint8_t Vy)
 {
     p_cpu->r[Vx] = p_cpu->r[Vx] ^ p_cpu->r[Vy];
 }
@@ -149,7 +149,7 @@ Set Vx = Vx + Vy, set VF = carry.
 
 The values of Vx and Vy are added together. If the result is greater than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
 */
-void ADD(int8_t Vx, int8_t Vy) {
+void ADD(uint8_t Vx, uint8_t Vy) {
     int16_t result = p_cpu->r[Vx] + p_cpu->r[Vy];
     p_cpu->r[Vx] = result & 0xFF;
     p_cpu->r[0xF] = (result > 0xFF);
@@ -161,13 +161,55 @@ Set Vx = Vx - Vy, set VF = NOT borrow.
 
 If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
 */
-void SUB(int8_t Vx, int8_t Vy) 
+void SUB(uint8_t Vx, uint8_t Vy) 
 {
     p_cpu->r[0xF] = (Vx > Vy);
     p_cpu->r[Vx] -= p_cpu->r[Vy];
 }
 
-void SNE(int8_t Vx, int8_t Vy) {
+/*
+8xy6 - SHR Vx {, Vy}
+Set Vx = Vx SHR 1.
+
+If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
+*/
+void SHR(uint8_t Vx)
+{
+    p_cpu->r[0xF] = Vx & 0x01;
+    p_cpu->r[Vx] /= 2;
+}
+
+/*
+8xy7 - SUBN Vx, Vy
+Set Vx = Vy - Vx, set VF = NOT borrow.
+
+If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
+*/
+void SUBN(uint8_t Vx, uint8_t Vy)
+{
+    p_cpu->r[0xF] = (p_cpu->r[Vy] > p_cpu->r[Vx]);
+    p_cpu->r[Vx] -= p_cpu->r[Vy];
+}
+
+/*
+8xyE - SHL Vx {, Vy}
+Set Vx = Vx SHL 1.
+
+If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
+*/
+void SHL(uint8_t Vx)
+{
+    p_cpu->r[0xF] = p_cpu->r[Vx] & 0x80; 
+    p_cpu->r[Vx] *= 2;
+}
+
+/*
+9xy0 - SNE Vx, Vy
+Skip next instruction if Vx != Vy.
+
+The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
+*/
+void SNE(uint8_t Vx, uint8_t Vy) {
     if(p_cpu->r[Vx] != p_cpu->r[Vy]) p_cpu->pc += 2;
 }
 
@@ -177,7 +219,30 @@ Set I = nnn.
 
 The value of register I is set to nnn.
 */
+void I_LD(int16_t addr) {
+    p_cpu->ir = addr;
+}
 
-void I_LD(int16_t nnn) {
-    p_cpu->ir = nnn;
+/*
+Bnnn - JP V0, addr
+Jump to location nnn + V0.
+
+The program counter is set to nnn plus the value of V0.
+*/
+void JP_V(int16_t addr)
+{
+    p_cpu->pc += addr + p_cpu->r[0];
+}
+
+/*
+Cxkk - RND Vx, byte
+Set Vx = random byte AND kk.
+
+The interpreter generates a random number from 0 to 255, 
+which is then ANDed with the value kk. The results are stored in Vx. 
+See instruction 8xy2 for more information on AND.
+*/
+void RND(uint8_t Vx, uint8_t kk)
+{
+    p_cpu->r[Vx] = (random() & 0xFF) & kk;
 }

@@ -2,12 +2,14 @@
 
 cpu* p_cpu;
 
-int main()
+int main(int argc, char *argv[])
 {
     printf("CHIP-8 Emulator started");
-
-    
     return 0;
+}
+
+void load_rom(const char* path) {
+    
 }
 
 bool init_cpu() {
@@ -15,10 +17,13 @@ bool init_cpu() {
     p_cpu = (void*)malloc(sizeof(cpu));
     p_cpu->pc = 0x200;
     p_cpu->sp = 0x0;
+    p_cpu->ic = 0;
+    p_cpu->st = 0;
+    p_cpu->dt = 0;
 
     CLS();
     memset(p_cpu->display, 0, sizeof(p_cpu->display));
-    memcpy(p_cpu->ram, &sprites, sizeof(sprites));
+    memcpy(((void*)p_cpu->ram)+0x50, &sprites, sizeof(sprites));
     return true;
 }
 
@@ -109,9 +114,14 @@ void loop() {
                 }
                 break;
             }
-
-
-
+            case 0xA000:
+            {
+                I_LD(opcode & 0x0FFF);
+            }
+            case 0xB000:
+            {
+                JP_V(opcode & 0x0FFF);
+            }
         }
     }
 }

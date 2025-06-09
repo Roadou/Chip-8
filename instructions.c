@@ -46,7 +46,9 @@ The PC is then set to nnn.
 */
 void CALL(int16_t addr)
 {
-    p_cpu->pc++;
+    p_cpu->sp++;
+    p_cpu->stack[p_cpu->sp] = p_cpu->pc;
+    p_cpu->pc = addr;
 }
 
 /*

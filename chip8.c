@@ -2,23 +2,46 @@
 #include <stdio.h>
 
 cpu* p_cpu;
+const char sprites[] = {
+    0xF0, 0x90, 0x90, 0x90, 0xF0,      // 0
+    0x20, 0x60, 0x20, 0x20, 0x70,      // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+};
 
 int main(int argc, char *argv[])
 {
     char buffer[255];
-    if(argc > 0)
+    if(argc < 2)
     {
-        load_rom(argv[0]);
+        printf("Usage: %s <path>\n", argv[0]);
+        return 1;
     }
+    init_cpu();
+    load_rom(argv[1]);
+    loop();
     printf("CHIP-8 Emulator started");
     return 0;
 }
 
 void load_rom(const char* path) {
+    printf("Reading file %s ", path);
     FILE *fptr = fopen(path, "r");
     if(fptr != NULL)
     {
-        fgets(p_cpu->ram, RAM_SIZE, fptr);
+        fread(p_cpu->ram + 0x200, 1, RAM_SIZE - 0x200, fptr);
         fclose(fptr);
         printf("Loaded %s into memory", path);
     }
@@ -32,6 +55,7 @@ bool init_cpu() {
     p_cpu->ic = 0;
     p_cpu->st = 0;
     p_cpu->dt = 0;
+    p_cpu->draw_flag = 0;
 
     CLS();
     memset(p_cpu->display, 0, sizeof(p_cpu->display));
@@ -41,10 +65,13 @@ bool init_cpu() {
 
 void loop() {
     
-    while(true)
+    while(p_cpu->ic < 64)
     {
+        if(p_cpu->draw_flag) draw_screen();
         uint16_t opcode = p_cpu->ram[p_cpu->pc] << 8 | p_cpu->ram[p_cpu->pc+1]; 
-        
+        p_cpu->pc += 2;
+        p_cpu->ic++;
+        printf("Opcode: %x \n", opcode);
         switch(opcode & 0xF000) {
             case 0x0000:
             {
@@ -60,6 +87,7 @@ void loop() {
             }
             case 0x1000: // 0x1nnn: JP
             {
+                //printf("JMP to %x\n", opcode & 0x0FFF);
                 JP(opcode & 0x0FFF);
                 break;
             }
@@ -138,4 +166,22 @@ void loop() {
             }
         }
     }
+}
+
+void draw_screen() {
+    for(int i = 0; i < SCREEN_HEIGHT; i++)
+    {
+        for(int j = 0; j < SCREEN_WIDTH; j++)
+        {
+            if((p_cpu->display[i][j] & 0x1) == 1)
+            {
+                printf("A", ENABLED_PIXEL);
+            }
+            else {
+                printf("B", DISABLED_PIXEL);
+            }
+        }
+        printf("\n");
+    }
+    p_cpu->draw_flag = 0;
 }

@@ -13,7 +13,7 @@ then subtracts 1 from the stack pointer.
 void RET()
 {
     p_cpu->pc = p_cpu->stack[p_cpu->sp];
-    p_cpu->sp--;
+    p_cpu->sp -= 1;
 }
 
 /*
@@ -260,6 +260,7 @@ See instruction 8xy3 for more information on XOR, and section 2.4, Display, for 
 */
 void DRW(uint8_t Vx, uint8_t Vy, int8_t n) 
 {
+    printf("Draw called \n");
     p_cpu->r[0xF] = 0;
     uint8_t x = p_cpu->r[Vx];
     uint8_t y = p_cpu->r[Vy];
@@ -272,6 +273,7 @@ void DRW(uint8_t Vx, uint8_t Vy, int8_t n)
             uint8_t screen_x = (x + j) % SCREEN_WIDTH;
             uint8_t screen_y = (y + i) % SCREEN_HEIGHT;
             if(p_cpu->display[screen_y][screen_x] != pixel) p_cpu->r[0xF] = 1;
+            
             p_cpu->display[screen_y][screen_x] ^= pixel;
         }
     }

@@ -1,15 +1,27 @@
 #include "include/chip8.h"
+#include <stdio.h>
 
 cpu* p_cpu;
 
 int main(int argc, char *argv[])
 {
+    char buffer[255];
+    if(argc > 0)
+    {
+        load_rom(argv[0]);
+    }
     printf("CHIP-8 Emulator started");
     return 0;
 }
 
 void load_rom(const char* path) {
-    
+    FILE *fptr = fopen(path, "r");
+    if(fptr != NULL)
+    {
+        fgets(p_cpu->ram, RAM_SIZE, fptr);
+        fclose(fptr);
+        printf("Loaded %s into memory", path);
+    }
 }
 
 bool init_cpu() {
@@ -31,7 +43,7 @@ void loop() {
     
     while(true)
     {
-        uint16_t opcode = p_cpu->ram[p_cpu->sp] << 8 | p_cpu->ram[p_cpu->sp+1]; 
+        uint16_t opcode = p_cpu->ram[p_cpu->pc] << 8 | p_cpu->ram[p_cpu->pc+1]; 
         
         switch(opcode & 0xF000) {
             case 0x0000:
@@ -117,10 +129,12 @@ void loop() {
             case 0xA000:
             {
                 I_LD(opcode & 0x0FFF);
+                break;
             }
             case 0xB000:
             {
                 JP_V(opcode & 0x0FFF);
+                break;
             }
         }
     }

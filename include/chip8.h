@@ -8,8 +8,9 @@
 #define CHIP8_H
 
 #define ENABLED_PIXEL '█'
+#define DISABLED_PIXEL ' '
 //Contains CHIP-8 defualt sprites located in the interpreter area [0x0-0x200]
-const int16_t sprites[] = {
+const char sprites[] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0,      // 0
     0x20, 0x60, 0x20, 0x20, 0x70,      // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -42,7 +43,7 @@ struct s_cpu {
     
     
     int16_t stack[STACK_SIZE]; // Chip-8 stack is 16
-    int8_t ram[RAM_SIZE]; // RAM (4kb), most programs start at 0x200
+    uint8_t ram[RAM_SIZE]; // RAM (4kb), most programs start at 0x200
     int8_t r[NUM_REGISTERS]; // Chip-8 have 16 x 8 bits registers
     int16_t ir; // I register
 
@@ -51,7 +52,7 @@ struct s_cpu {
 
     int16_t ic; // Instruction counter
 
-    char display[SCREEN_WIDTH][SCREEN_HEIGHT];
+    char display[SCREEN_HEIGHT][SCREEN_WIDTH];
 
     bool draw_flag;
 };
@@ -59,6 +60,8 @@ struct s_cpu {
 typedef struct s_cpu cpu;
 
 extern cpu *p_cpu;
+
+void load_rom(const char*);
 
 void JP(int16_t);
 void CLS();

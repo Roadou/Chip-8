@@ -23,6 +23,7 @@ Clear the display.
 void CLS()
 {
     memset(p_cpu->display, 0, sizeof(p_cpu->display));
+    p_cpu->draw_flag = true;
 }
 
 /*
@@ -163,7 +164,7 @@ If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and
 */
 void SUB(uint8_t Vx, uint8_t Vy) 
 {
-    p_cpu->r[0xF] = (Vx > Vy);
+    p_cpu->r[0xF] = (p_cpu->r[Vx] > p_cpu->r[Vy]);
     p_cpu->r[Vx] -= p_cpu->r[Vy];
 }
 
@@ -245,4 +246,34 @@ See instruction 8xy2 for more information on AND.
 void RND(uint8_t Vx, uint8_t kk)
 {
     p_cpu->r[Vx] = (random() & 0xFF) & kk;
+}
+
+/*
+Dxyn - DRW Vx, Vy, nibble
+Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+
+The interpreter reads n bytes from memory, starting at the address stored in I. 
+These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). 
+Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, 
+otherwise it is set to 0. If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen. 
+See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
+*/
+void DRW(uint8_t Vx, uint8_t Vy, int8_t n) 
+{
+    p_cpu->r[0xF] = 0;
+    uint8_t x = p_cpu->r[Vx];
+    uint8_t y = p_cpu->r[Vy];
+    uint8_t* p_sprites = (uint8_t*)(p_cpu->ram) + p_cpu->ir;
+    for(int i = 0; i < n; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            uint8_t pixel = (*(p_sprites + i) >> (7 - j)) & 0x1;
+            uint8_t screen_x = (x + j) % SCREEN_WIDTH;
+            uint8_t screen_y = (y + i) % SCREEN_HEIGHT;
+            if(p_cpu->display[screen_y][screen_x] != pixel) p_cpu->r[0xF] = 1;
+            p_cpu->display[screen_y][screen_x] ^= pixel;
+        }
+    }
+    p_cpu->draw_flag = true;
 }

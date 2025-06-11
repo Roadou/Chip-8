@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include "raylib.h"
 
 #ifndef CHIP8_H
 #define CHIP8_H
@@ -16,7 +17,7 @@ extern const char sprites[];
 #define NUM_REGISTERS 16
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
-
+#define SCREEN_SCALE 8
 
 struct s_cpu {
 
@@ -70,4 +71,6 @@ void SHL(uint8_t Vx);
 void SNE(uint8_t Vx, uint8_t Vy);
 void I_LD(int16_t addr);
 void JP_V(int16_t addr);
+void DRW(uint8_t Vx, uint8_t Vy, uint8_t n);
+
 #endif

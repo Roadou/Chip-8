@@ -1,4 +1,6 @@
 #include "include/chip8.h"
+#include "include/raylib.h"
+
 #include <stdio.h>
 
 cpu* p_cpu;
@@ -21,6 +23,27 @@ const char sprites[] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
+
+
+//Raylib screen size
+const int screenWidth = 1280;
+const int screenHeight = 720;
+
+void draw_registers() {
+    for (int i = 0; i < 16; i++) {
+        char buffer[32];
+        sprintf(buffer, "V%01X: 0x%02X", i, p_cpu->r[i]);
+
+        int col = i / 8;
+        int row = i % 8;
+
+        int x = screenWidth / 2 + 340 + col * 160;
+        int y = screenHeight / 2 - 100 + row * 25;
+
+        DrawText(buffer, x, y, 32, RED);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     char buffer[255];
@@ -31,14 +54,24 @@ int main(int argc, char *argv[])
     }
     init_cpu();
     load_rom(argv[1]);
-    loop();
+    InitWindow(screenWidth, screenHeight, "Chip-8");
+    while(!WindowShouldClose())
+    {
+        loop();
+        BeginDrawing();
+        ClearBackground(BLACK);
+        DrawRectangle(screenWidth-305, screenHeight/2-98, 305, 200, LIGHTGRAY );
+        draw_registers();
+        draw_screen();
+        EndDrawing();
+    }
     printf("CHIP-8 Emulator started");
     return 0;
 }
 
 void load_rom(const char* path) {
     printf("Reading file %s ", path);
-    FILE *fptr = fopen(path, "r");
+    FILE *fptr = fopen(path, "rb");
     if(fptr != NULL)
     {
         fread(p_cpu->ram + 0x200, 1, RAM_SIZE - 0x200, fptr);
@@ -65,7 +98,8 @@ bool init_cpu() {
 
 void loop() {
     
-    while(p_cpu->ic < 64)
+    p_cpu->ic = 0;
+    while(p_cpu->ic < 16)
     {
         if(p_cpu->draw_flag) draw_screen();
         uint16_t opcode = p_cpu->ram[p_cpu->pc] << 8 | p_cpu->ram[p_cpu->pc+1]; 
@@ -164,24 +198,27 @@ void loop() {
                 JP_V(opcode & 0x0FFF);
                 break;
             }
+            case 0xC000:
+            {
+                break;
+            }
+            case 0xD000:
+            {
+                DRW((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F, opcode & 0x000F);
+            }
         }
     }
 }
 
 void draw_screen() {
-    for(int i = 0; i < SCREEN_HEIGHT; i++)
-    {
-        for(int j = 0; j < SCREEN_WIDTH; j++)
-        {
-            if((p_cpu->display[i][j] & 0x1) == 1)
-            {
-                printf("A", ENABLED_PIXEL);
-            }
-            else {
-                printf("B", DISABLED_PIXEL);
+    for (int y = 0; y < SCREEN_HEIGHT; y++) {
+        for (int x = 0; x < SCREEN_WIDTH; x++) {
+            if ((p_cpu->display[y][x]) == 1) {
+                int px = (screenWidth / 2) - (SCREEN_WIDTH * SCREEN_SCALE) / 2 + x * SCREEN_SCALE;
+                int py = (screenHeight / 2) - (SCREEN_HEIGHT * SCREEN_SCALE) / 2 + y * SCREEN_SCALE;
+                DrawRectangle(px, py, SCREEN_SCALE, SCREEN_SCALE, WHITE);
             }
         }
-        printf("\n");
     }
     p_cpu->draw_flag = 0;
 }

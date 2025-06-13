@@ -32,7 +32,7 @@ Jump to location nnn.
 
 The interpreter sets the program counter to nnn.
 */
-void JP(int16_t addr)
+void JP(uint16_t addr)
 {
     p_cpu->pc = addr;
 }
@@ -45,7 +45,7 @@ The interpreter increments the stack pointer,
 then puts the current PC on the top of the stack. 
 The PC is then set to nnn.
 */
-void CALL(int16_t addr)
+void CALL(uint16_t addr)
 {
     p_cpu->sp++;
     p_cpu->stack[p_cpu->sp] = p_cpu->pc;
@@ -59,7 +59,7 @@ Skip next instruction if Vx = kk.
 The interpreter compares register Vx to kk, and if they are equal, 
 increments the program counter by 2.
 */
-void bSE(uint8_t Vx, int8_t kk)
+void bSE(uint8_t Vx, uint8_t kk)
 {
     if(p_cpu->r[Vx] == kk) p_cpu->pc += 2;
 }
@@ -71,7 +71,7 @@ Skip next instruction if Vx != kk.
 The interpreter compares register Vx to kk, and if they are not equal, 
 increments the program counter by 2.
 */
-void bSNE(uint8_t Vx, int8_t kk)
+void bSNE(uint8_t Vx, uint8_t kk)
 {
     if(p_cpu->r[Vx] != kk) p_cpu->pc += 2;
 }
@@ -93,7 +93,7 @@ Set Vx = kk.
 
 The interpreter puts the value kk into register Vx.
 */
-void bLD(uint8_t Vx, int8_t kk)
+void bLD(uint8_t Vx, uint8_t kk)
 {
     p_cpu->r[Vx] = kk;
 }
@@ -104,7 +104,7 @@ Set Vx = Vx + kk.
 
 Adds the value kk to the value of register Vx, then stores the result in Vx. 
 */
-void bADD(uint8_t Vx, int8_t kk)
+void bADD(uint8_t Vx, uint8_t kk)
 {
     p_cpu->r[Vx] = p_cpu->r[Vx] + kk;
 }
@@ -220,7 +220,7 @@ Set I = nnn.
 
 The value of register I is set to nnn.
 */
-void I_LD(int16_t addr) {
+void I_LD(uint16_t addr) {
     p_cpu->ir = addr;
 }
 
@@ -230,7 +230,7 @@ Jump to location nnn + V0.
 
 The program counter is set to nnn plus the value of V0.
 */
-void JP_V(int16_t addr)
+void JP_V(uint16_t addr)
 {
     p_cpu->pc += addr + p_cpu->r[0];
 }
@@ -279,3 +279,143 @@ void DRW(uint8_t Vx, uint8_t Vy, uint8_t n)
     }
     p_cpu->draw_flag = true;
 }
+
+/*
+Ex9E - SKP Vx
+Skip next instruction if key with the value of Vx is pressed.
+
+Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
+*/
+void SKP(uint8_t Vx)
+{
+    if(p_cpu->keypad[p_cpu->r[Vx]] == 1) p_cpu->pc += 2;
+}
+
+/*
+ExA1 - SKNP Vx
+Skip next instruction if key with the value of Vx is not pressed.
+
+Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
+*/
+void SKNP(uint8_t Vx)
+{
+    if(p_cpu->keypad[p_cpu->r[Vx]] == 0) p_cpu->pc += 2;
+}
+
+/*
+Fx07 - LD Vx, DT
+Set Vx = delay timer value.
+
+The value of DT is placed into Vx.
+*/
+void LD_VX_DT(uint8_t Vx)
+{
+    p_cpu->r[Vx] = p_cpu->dt;
+}
+
+/*
+Fx0A - LD Vx, K
+Wait for a key press, store the value of the key in Vx.
+
+All execution stops until a key is pressed, then the value of that key is stored in Vx.
+*/
+void LD_VX_K(uint8_t Vx)
+{
+    for(int i = 0; i < 16; i++) {
+        if(p_cpu->keypad[i] != 0) {
+            p_cpu->r[Vx] = i;
+            return;
+        }
+    }
+    p_cpu->pc -= 2;
+}
+
+/*
+Fx15 - LD DT, Vx
+Set delay timer = Vx.
+
+DT is set equal to the value of Vx.
+*/
+void LD_DT_VX(uint8_t Vx)
+{
+    p_cpu->dt = p_cpu->r[Vx];
+}
+
+/*
+Fx18 - LD ST, Vx
+Set sound timer = Vx.
+
+ST is set equal to the value of Vx.
+*/
+void LD_ST_VX(uint8_t Vx)
+{
+    p_cpu->st = p_cpu->r[Vx];
+}
+
+/*
+Fx1E - ADD I, Vx
+Set I = I + Vx.
+
+The values of I and Vx are added, and the results are stored in I.
+*/
+void ADD_I_VX(uint8_t Vx)
+{
+    p_cpu->ir += p_cpu->r[Vx];
+}
+
+/*
+Fx29 - LD F, Vx
+Set I = location of sprite for digit Vx.
+
+The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx. 
+See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
+*/
+void LD_F_VX(uint8_t Vx)
+{
+    p_cpu->ir = SPRITE_OFFSET+(5*p_cpu->r[Vx]);
+}
+
+/*
+Fx33 - LD B, Vx
+Store BCD representation of Vx in memory locations I, I+1, and I+2.
+
+The interpreter takes the decimal value of Vx, 
+and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
+*/
+
+void LD_B_VX(uint8_t Vx)
+{
+    uint8_t digit = p_cpu->r[Vx];
+    p_cpu->ram[p_cpu->ir] = digit / 100 % 10;
+    p_cpu->ram[p_cpu->ir+1] = digit / 10 % 10;
+    p_cpu->ram[p_cpu->ir+2] = digit % 10;
+}
+
+/*
+Fx55 - LD [I], Vx
+Store registers V0 through Vx in memory starting at location I.
+
+The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
+*/
+void LD_I_VX(uint8_t Vx)
+{
+    for(int i = 0; i < Vx; i++)
+    {
+        p_cpu->ram[p_cpu->ir+i] = p_cpu->r[Vx];
+    }
+}
+
+/*
+Fx65 - LD Vx, [I]
+Read registers V0 through Vx from memory starting at location I.
+
+The interpreter reads values from memory starting at location I into registers V0 through Vx.
+*/
+void LD_VX_I(uint8_t Vx)
+{
+    for(int i = 0; i < Vx; i++)
+    {
+        p_cpu->r[Vx] = p_cpu->ram[p_cpu->ir+i];
+    }
+}
+

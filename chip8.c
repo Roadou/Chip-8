@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
     init_cpu();
     load_rom(argv[1]);
     InitWindow(screenWidth, screenHeight, "Chip-8");
+    SetTargetFPS(60);
     while(!WindowShouldClose())
     {
         loop();
@@ -92,17 +93,29 @@ bool init_cpu() {
 
     CLS();
     memset(p_cpu->display, 0, sizeof(p_cpu->display));
-    memcpy(((void*)p_cpu->ram)+0x50, &sprites, sizeof(sprites));
+    memcpy(((void*)p_cpu->ram)+SPRITE_OFFSET, &sprites, sizeof(sprites));
     return true;
 }
 
 void loop() {
     
     p_cpu->ic = 0;
+
+    if(p_cpu->dt > 0) p_cpu->dt--;
+    if(p_cpu->st > 0) p_cpu->dt--;
+    handleKey();
+
     while(p_cpu->ic < 16)
     {
         if(p_cpu->draw_flag) draw_screen();
         uint16_t opcode = p_cpu->ram[p_cpu->pc] << 8 | p_cpu->ram[p_cpu->pc+1]; 
+
+        uint8_t n = opcode & 0x000F;
+        uint8_t Vx = (opcode >> 8) & 0x000F;
+        uint8_t Vy = (opcode >> 4) & 0x000F;
+        uint8_t kk = opcode & 0x00FF;
+        uint16_t nnn = opcode & 0x0FFF;
+
         p_cpu->pc += 2;
         p_cpu->ic++;
         printf("Opcode: %x \n", opcode);
@@ -122,37 +135,37 @@ void loop() {
             case 0x1000: // 0x1nnn: JP
             {
                 //printf("JMP to %x\n", opcode & 0x0FFF);
-                JP(opcode & 0x0FFF);
+                JP(nnn);
                 break;
             }
             case 0x2000: // 0x2nnn: CALL
             {
-                CALL(opcode & 0x0FFF);
+                CALL(nnn);
                 break;
             }
             case 0x3000:
             {
-                bSE((opcode >> 8) & 0x0F, opcode & 0x00FF);
+                bSE(Vx, kk);
                 break;
             }
             case 0x4000:
             {
-                bSNE((opcode >> 8) & 0x0F, opcode & 0x00FF);
+                bSNE(Vx, kk);
                 break;
             }
             case 0x5000:
             {
-                SE((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                SE(Vx, Vy);
                 break;
             }
             case 0x6000:
             {
-                bLD((opcode >> 8) & 0x000F, opcode & 0x00FF);
+                bLD(Vx, kk);
                 break;
             }
             case 0x7000:
             {
-                bADD((opcode >> 8) & 0x000F, opcode & 0x00FF);
+                bADD(Vx, kk);
                 break;
             }
             case 0x8000:
@@ -161,27 +174,27 @@ void loop() {
                 {
                     case 0x8001:
                     {
-                        OR((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        OR(Vx, Vy);
                         break;
                     }
                     case 0x8002:
                     {
-                        AND((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        AND(Vx, Vy);
                         break;
                     }
                     case 0x8003:
                     {
-                        XOR((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        XOR(Vx, Vy);
                         break;
                     }
                     case 0x8004:
                     {
-                        ADD((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        ADD(Vx, Vy);
                         break;
                     }
                     case 0x8005:
                     {
-                        SUB((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F);
+                        SUB(Vx, Vy);
                         break;
                     }
 
@@ -190,22 +203,95 @@ void loop() {
             }
             case 0xA000:
             {
-                I_LD(opcode & 0x0FFF);
+                I_LD(nnn);
                 break;
             }
             case 0xB000:
             {
-                JP_V(opcode & 0x0FFF);
+                JP_V(nnn);
                 break;
             }
             case 0xC000:
             {
+                RND(Vx, kk);
                 break;
             }
             case 0xD000:
             {
-                DRW((opcode >> 8) & 0x000F, (opcode >> 4) & 0x000F, opcode & 0x000F);
+                DRW(Vx, Vy, n);
+                break;
             }
+            case 0xE000:
+            {
+                switch(opcode & 0xF0FF)
+                {
+                    case 0xE09E:
+                    {
+                        SKP(Vx);
+                        break;
+                    }
+                    case 0xE0A1:
+                    {
+                        SKNP(Vx);
+                        break;
+                    }
+                }
+                break;
+            }
+            case 0xF000:
+            {
+                switch(opcode & 0xF0FF)
+                {
+                    case 0xF007:
+                    {
+                        LD_VX_DT(Vx);
+                        break;
+                    }
+                    case 0xF00A:
+                    {
+                        LD_VX_K(Vx);
+                        break;
+                    }
+                    case 0xF015:
+                    {
+                        LD_DT_VX(Vx);
+                        break;
+                    }
+                    case 0xF018:
+                    {
+                        LD_ST_VX(Vx);
+                        break;
+                    }
+                    case 0xF0AE:
+                    {
+                        ADD_I_VX(Vx);
+                        break;
+                    }
+                    case 0xF029:
+                    {
+                        LD_F_VX(Vx);
+                        break;
+                    }
+                    case 0xF033:
+                    {
+                        LD_B_VX(Vx);
+                        break;
+                    }
+                    case 0xF055:
+                    {
+                        LD_I_VX(Vx);
+                        break;
+                    }
+                    case 0xF065:
+                    {
+                        LD_VX_I(Vx);
+                        break;
+                    }
+                }
+                break;
+            }
+            default:
+                printf("Unimplemented 0x%x", opcode);
         }
     }
 }
@@ -221,4 +307,24 @@ void draw_screen() {
         }
     }
     p_cpu->draw_flag = 0;
+}
+
+void handleKey()
+{
+    p_cpu->keypad[0]  = IsKeyDown(KEY_ONE);
+    p_cpu->keypad[1]  = IsKeyDown(KEY_A);
+    p_cpu->keypad[2]  = IsKeyDown(KEY_Q);
+    p_cpu->keypad[3]  = IsKeyDown(KEY_W);
+    p_cpu->keypad[4]  = IsKeyDown(KEY_TWO);
+    p_cpu->keypad[5]  = IsKeyDown(KEY_Z);
+    p_cpu->keypad[6]  = IsKeyDown(KEY_S);
+    p_cpu->keypad[7]  = IsKeyDown(KEY_X);
+    p_cpu->keypad[8]  = IsKeyDown(KEY_THREE);
+    p_cpu->keypad[9]  = IsKeyDown(KEY_E);
+    p_cpu->keypad[10] = IsKeyDown(KEY_D);
+    p_cpu->keypad[11] = IsKeyDown(KEY_C);
+    p_cpu->keypad[12] = IsKeyDown(KEY_FOUR);
+    p_cpu->keypad[13] = IsKeyDown(KEY_R);
+    p_cpu->keypad[14] = IsKeyDown(KEY_F);
+    p_cpu->keypad[15] = IsKeyDown(KEY_V);
 }

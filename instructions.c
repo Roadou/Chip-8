@@ -110,6 +110,17 @@ void bADD(uint8_t Vx, uint8_t kk)
 }
 
 /*
+8xy0 - LD Vx, Vy
+Set Vx = Vy.
+
+Stores the value of register Vy in register Vx.
+*/
+void LD_VX_VY(uint8_t Vx, uint8_t Vy)
+{
+    p_cpu->r[Vx] = p_cpu->r[Vy];
+}
+
+/*
 8xy1 - OR Vx, Vy
 Set Vx = Vx OR Vy.
 

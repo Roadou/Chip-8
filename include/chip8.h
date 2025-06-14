@@ -66,6 +66,7 @@ void bSE(uint8_t Vx, uint8_t kk);
 void bSNE(uint8_t Vx, uint8_t kk);
 void bLD(uint8_t Vx, uint8_t kk);
 void bADD(uint8_t Vx, uint8_t kk);
+void LD_VX_VY(uint8_t Vx, uint8_t Vy);
 void OR(uint8_t Vx, uint8_t Vy);
 void AND(uint8_t Vx, uint8_t Vy);
 void XOR(uint8_t Vx, uint8_t Vy);

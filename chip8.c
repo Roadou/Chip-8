@@ -122,13 +122,17 @@ void loop() {
             {
                 switch(opcode & 0x00FF) {
                     case 0x00E0: // 00E0: CLS
+                    {
                         CLS();
                         break;
+                    }
                     case 0x00EE: // 0x00EE: RET
+                    {
                         RET();
                         break;
+                    }
                 }
-                break;
+                
             }
             case 0x1000: // 0x1nnn: JP
             {
@@ -170,6 +174,11 @@ void loop() {
             {
                 switch(opcode & 0xF00F)
                 {
+                    case 0x8000:
+                    {
+                        LD_VX_VY(Vx, Vy);
+                        break;
+                    }
                     case 0x8001:
                     {
                         OR(Vx, Vy);
@@ -195,8 +204,27 @@ void loop() {
                         SUB(Vx, Vy);
                         break;
                     }
-
+                    case 0x8006:
+                    {
+                        SHR(Vx);
+                        break;
+                    }
+                    case 0x8007:
+                    {
+                        SUBN(Vx, Vy);
+                        break;
+                    }
+                    case 0x800E:
+                    {
+                        SHL(Vx);
+                        break;
+                    }
                 }
+                
+            }
+            case 0x9000:
+            {
+                SNE(Vx, Vy);
                 break;
             }
             case 0xA000:
@@ -234,7 +262,7 @@ void loop() {
                         break;
                     }
                 }
-                break;
+                
             }
             case 0xF000:
             {
@@ -286,7 +314,7 @@ void loop() {
                         break;
                     }
                 }
-                break;
+                
             }
             default:
                 printf("Unimplemented 0x%x", opcode);

@@ -176,7 +176,7 @@ If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then 
 */
 void SHR(uint8_t Vx)
 {
-    p_cpu->r[0xF] = Vx & 0x01;
+    p_cpu->r[0xF] = p_cpu->r[Vx] & 0x01;
     p_cpu->r[Vx] /= 2;
 }
 
@@ -189,7 +189,7 @@ If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and
 void SUBN(uint8_t Vx, uint8_t Vy)
 {
     p_cpu->r[0xF] = (p_cpu->r[Vy] > p_cpu->r[Vx]);
-    p_cpu->r[Vx] -= p_cpu->r[Vy];
+    p_cpu->r[Vx] = p_cpu->r[Vy] - p_cpu->r[Vx];
 }
 
 /*
@@ -200,7 +200,7 @@ If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. The
 */
 void SHL(uint8_t Vx)
 {
-    p_cpu->r[0xF] = p_cpu->r[Vx] & 0x80; 
+    p_cpu->r[0xF] = (p_cpu->r[Vx] & 0x80) >> 7; 
     p_cpu->r[Vx] *= 2;
 }
 
@@ -232,7 +232,7 @@ The program counter is set to nnn plus the value of V0.
 */
 void JP_V(uint16_t addr)
 {
-    p_cpu->pc += addr + p_cpu->r[0];
+    p_cpu->pc = addr + p_cpu->r[0];
 }
 
 /*
@@ -272,7 +272,7 @@ void DRW(uint8_t Vx, uint8_t Vy, uint8_t n)
             uint8_t pixel = (*(p_sprites + i) >> (7 - j)) & 0x1;
             uint8_t screen_x = (x + j) % SCREEN_WIDTH;
             uint8_t screen_y = (y + i) % SCREEN_HEIGHT;
-            if(p_cpu->display[screen_y][screen_x] != pixel) p_cpu->r[0xF] = 1;
+            if(p_cpu->display[screen_y][screen_x] == pixel && pixel == 1) p_cpu->r[0xF] = 1;
             
             p_cpu->display[screen_y][screen_x] ^= pixel;
         }
@@ -399,9 +399,9 @@ The interpreter copies the values of registers V0 through Vx into memory, starti
 */
 void LD_I_VX(uint8_t Vx)
 {
-    for(int i = 0; i < Vx; i++)
+    for(int i = 0; i <= Vx; i++)
     {
-        p_cpu->ram[p_cpu->ir+i] = p_cpu->r[Vx];
+        p_cpu->ram[p_cpu->ir+i] = p_cpu->r[i];
     }
 }
 
@@ -413,9 +413,9 @@ The interpreter reads values from memory starting at location I into registers V
 */
 void LD_VX_I(uint8_t Vx)
 {
-    for(int i = 0; i < Vx; i++)
+    for(int i = 0; i <= Vx; i++)
     {
-        p_cpu->r[Vx] = p_cpu->ram[p_cpu->ir+i];
+        p_cpu->r[i] = p_cpu->ram[p_cpu->ir+i];
     }
 }
 

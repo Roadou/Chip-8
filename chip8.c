@@ -89,7 +89,6 @@ bool init_cpu() {
     p_cpu->ic = 0;
     p_cpu->st = 0;
     p_cpu->dt = 0;
-    p_cpu->draw_flag = 0;
 
     CLS();
     memset(p_cpu->display, 0, sizeof(p_cpu->display));
@@ -102,12 +101,12 @@ void loop() {
     p_cpu->ic = 0;
 
     if(p_cpu->dt > 0) p_cpu->dt--;
-    if(p_cpu->st > 0) p_cpu->dt--;
+    if(p_cpu->st > 0) p_cpu->st--;
     handleKey();
-
-    while(p_cpu->ic < 16)
+    
+    while(p_cpu->ic < 13)
     {
-        if(p_cpu->draw_flag) draw_screen();
+        
         uint16_t opcode = p_cpu->ram[p_cpu->pc] << 8 | p_cpu->ram[p_cpu->pc+1]; 
 
         uint8_t n = opcode & 0x000F;
@@ -118,7 +117,6 @@ void loop() {
 
         p_cpu->pc += 2;
         p_cpu->ic++;
-        printf("Opcode: %x \n", opcode);
         switch(opcode & 0xF000) {
             case 0x0000:
             {
